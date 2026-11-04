@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universal Scraper Online</title>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f13; --card: #1a1a22; --border: #2a2a35;
+      --accent: #7c5cfc; --accent-hover: #6a4ae0;
+      --text: #e8e8ed; --muted: #9898a6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 28px 14px; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 {
+      font-size: 1.75rem; font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #7c5cfc);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+    .badge {
+      display: inline-block; margin-top: 8px; padding: 3px 10px;
+      background: #1e2a1e; color: #4ade80; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px; margin-bottom: 14px;
+    }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    input[type="url"], input[type="number"], input[type="text"], select {
+      width: 100%; padding: 11px 12px; background: #121218;
+      border: 1px solid var(--border); border-radius: 10px; color: var(--text);
+      font-size: 0.92rem; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .row > div { flex: 1; min-width: 120px; }
+    .row .sm { flex: 0 0 100px; }
+    button {
+      padding: 11px 14px; border: none; border-radius: 10px;
+      font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-export { background: #1e2a1e; border: 1px solid #2d4a2d; color: #4ade80; }
+    .btn-danger { background: transparent; border: 1px solid #4a2020; color: #f87171; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .actions button { flex: 1; min-width: 110px; }
+    .status { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 0.86rem; display: none; }
+    .status.show { display: block; }
+    .status.loading { background: #1e1e2a; color: var(--muted); }
+    .status.error { background: #2a1515; color: #f87171; }
+    .status.success { background: #152a1a; color: #4ade80; }
+    .list-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .list-toolbar .info { color: var(--muted); font-size: 0.88rem; }
+    .list-toolbar .info strong { color: var(--accent); }
+    .series-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 8px; max-height: 460px; overflow-y: auto;
+    }
+    .series-item {
+      display: flex; gap: 10px; align-items: center;
+      background: #121218; border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px; cursor: pointer;
+    }
+    .series-item.selected { border-color: var(--accent); background: #1a1628; }
+    .series-item.scraped { opacity: 0.55; }
+    .series-item.scraped .meta .t::after { content: " ✓"; color: #4ade80; }
+    .series-item input { width: 15px; height: 15px; accent-color: var(--accent); flex-shrink: 0; }
+    .series-item img {
+      width: 44px; height: 62px; object-fit: cover; border-radius: 6px;
+      background: #0a0a0e; flex-shrink: 0;
+    }
+    .series-item .meta { min-width: 0; flex: 1; }
+    .series-item .meta .t {
+      font-size: 0.85rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .series-item .meta .u {
+      font-size: 0.7rem; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .store-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .store-count { font-size: 0.88rem; color: var(--muted); }
+    .store-count strong { color: var(--accent); }
+    .hidden { display: none !important; }
+    .note {
+      font-size: 0.78rem; color: var(--muted); margin-top: 8px; line-height: 1.4;
+    }
+    footer { text-align: center; margin-top: 24px; color: var(--muted); font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Universal Scraper</h1>
+      <p>Tempel 1 link → discover → pilih → scrape → download</p>
+      <span class="badge">Online · GitHub Pages · No backend</span>
+    </header>
+
+    <div class="card">
+      <div class="row">
+        <div style="flex:2">
+          <label>Link (project / daftar / series)</label>
+          <input type="url" id="url" placeholder="https://09.ikiru.wtf/project" />
+        </div>
+        <div class="sm">
+          <label>Max halaman</label>
+          <input type="number" id="max-pages" min="1" max="20" value="7" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>CORS Proxy (wajib untuk bypass browser)</label>
+          <select id="proxy">
+            <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
+            <option value="https://corsproxy.io/?">corsproxy.io</option>
+            <option value="https://api.codetabs.com/v1/proxy?quest=">codetabs</option>
+            <option value="">(tanpa proxy — hanya situs yang izinkan CORS)</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-primary" id="btn-discover">Discover Series</button>
+      </div>
+      <p class="note">Karena jalan di browser, request lewat CORS proxy. Kalau gagal, ganti proxy di atas.</p>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card hidden" id="list-card">
+      <div class="list-toolbar">
+        <div class="info">
+          Ditemukan <strong id="found-count">0</strong> series
+          <span id="pages-info"></span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="margin:0;font-size:0.75rem;display:flex;align-items:center;gap:6px;color:var(--muted)">
+            Batch
+            <input type="number" id="batch-size" min="1" max="200" value="80" style="width:60px;padding:5px 8px;font-size:0.82rem" />
+          </label>
+          <button class="btn-secondary" id="btn-next-batch" style="flex:0;padding:7px 10px;font-size:0.8rem">Pilih batch berikutnya</button>
+          <button class="btn-secondary" id="btn-all" style="flex:0;padding:7px 10px;font-size:0.8rem">Semua</button>
+          <button class="btn-secondary" id="btn-none" style="flex:0;padding:7px 10px;font-size:0.8rem">Kosong</button>
+        </div>
+      </div>
+      <div class="series-grid" id="series-grid"></div>
+      <div class="actions">
+        <button class="btn-primary" id="btn-scrape-sel">Scrape yang Dipilih</button>
+        <button class="btn-secondary" id="btn-dl-sel" disabled>Download ZIP</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="store-bar">
+        <div class="store-count">Data tersimpan (unik): <strong id="store-count">0</strong></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-export" id="btn-csv" style="flex:0">Export CSV</button>
+          <button class="btn-export" id="btn-json" style="flex:0">Export JSON</button>
+          <button class="btn-secondary" id="btn-dl-all" style="flex:0">Download Semua ZIP</button>
+          <button class="btn-danger" id="btn-clear" style="flex:0">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>Client-side only · Data tersimpan di memori browser (hilang saat refresh)</footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
